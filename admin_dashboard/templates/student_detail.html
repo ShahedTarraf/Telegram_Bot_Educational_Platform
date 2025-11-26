@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل الطالب - المنصة التعليمية</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .info-row {
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .badge-lg {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        .navbar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 15px 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-graduation-cap"></i> لوحة التحكم
+            </a>
+            <div class="d-flex gap-2">
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-home"></i> الرئيسية
+                </a>
+                <a href="/students" class="btn btn-outline-info">
+                    <i class="fas fa-users"></i> قائمة الطلاب
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Student Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-user-circle"></i> معلومات الطالب
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-row">
+                            <div class="info-label">الاسم الكامل:</div>
+                            <div>{{ student.full_name }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">البريد الإلكتروني:</div>
+                            <div>{{ student.email }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">رقم الهاتف:</div>
+                            <div>{{ student.phone }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-row">
+                            <div class="info-label">Telegram ID:</div>
+                            <div>{{ student.telegram_id }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">تاريخ التسجيل:</div>
+                            <div>{{ student.registered_at.strftime('%Y-%m-%d %H:%M') if student.registered_at else 'N/A' }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">آخر نشاط:</div>
+                            <div>{{ student.last_active.strftime('%Y-%m-%d %H:%M') if student.last_active else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrolled Materials Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-book-open"></i> المواد المسجلة
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if enrolled_materials %}
+                    <div class="row">
+                        {% for m in enrolled_materials %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ m.material_name }}</h5>
+                                    <p class="card-text mb-1">
+                                        <strong>السنة:</strong> {{ m.year }}
+                                        &nbsp; | &nbsp;
+                                        <strong>الفصل:</strong> {{ m.semester }}
+                                    </p>
+                                    <p class="card-text mb-1">
+                                        <strong>الحالة:</strong>
+                                        {% if m.approval_status == 'approved' %}
+                                            <span class="badge bg-success">مقبول</span>
+                                        {% elif m.approval_status == 'pending' %}
+                                            <span class="badge bg-warning">معلق</span>
+                                        {% elif m.approval_status == 'rejected' %}
+                                            <span class="badge bg-danger">مرفوض</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="card-text mb-1">
+                                        <strong>التقدم:</strong> {{ m.progress }}%
+                                    </p>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            تاريخ التسجيل: {{ m.enrolled_at.strftime('%Y-%m-%d') if m.enrolled_at else 'N/A' }}
+                                        </small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>لا توجد مواد مسجّلة</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Enrolled Courses Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-book"></i> الدورات المسجلة
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if enrolled_courses %}
+                    <div class="row">
+                        {% for enrollment in enrolled_courses %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ enrollment.course_name }}</h5>
+                                    <p class="card-text">
+                                        <strong>الحالة:</strong>
+                                        {% if enrollment.approval_status == 'approved' %}
+                                            <span class="badge bg-success">مقبول</span>
+                                        {% elif enrollment.approval_status == 'pending' %}
+                                            <span class="badge bg-warning">معلق</span>
+                                        {% elif enrollment.approval_status == 'rejected' %}
+                                            <span class="badge bg-danger">مرفوض</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="card-text">
+                                        <strong>التقدم:</strong> {{ enrollment.progress }}%
+                                    </p>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            تاريخ التسجيل: {{ enrollment.enrolled_at.strftime('%Y-%m-%d') if enrollment.enrolled_at else 'N/A' }}
+                                        </small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>لم يسجل الطالب في أي دورة بعد</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

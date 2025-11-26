@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الإشعارات - المنصة التعليمية</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .navbar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 15px 20px;
+        }
+        .notification-item {
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+            transition: all 0.3s;
+        }
+        .notification-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .notification-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .notification-icon.approval {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .notification-icon.grade {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .notification-icon.general {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-send-notification {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+        }
+        .btn-send-notification:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-graduation-cap"></i> لوحة التحكم
+            </a>
+            <div class="d-flex gap-2">
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-home"></i> الرئيسية
+                </a>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sendNotificationModal">
+                    <i class="fas fa-paper-plane"></i> إرسال إشعار جديد
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-bell"></i> الإشعارات
+                    </h3>
+                    <span class="badge bg-light text-dark fs-5">
+                        إجمالي: {{ notifications|length }} إشعار
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                    {% for notif in notifications %}
+                    <div class="notification-item">
+                        <div class="row align-items-center">
+                            <div class="col-md-1 text-center">
+                                <div class="notification-icon {{ notif.notification_type }}">
+                                    {% if notif.notification_type == 'approval' %}
+                                        <i class="fas fa-check"></i>
+                                    {% elif notif.notification_type == 'grade' %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="fas fa-bell"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h5 class="mb-2">{{ notif.title }}</h5>
+                                <p class="text-muted mb-2">{{ notif.message }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> المستخدم: {{ notif.user_id }} |
+                                    <i class="fas fa-clock"></i> {{ notif.created_at.strftime('%Y-%m-%d %H:%M') if notif.created_at else 'N/A' }}
+                                </small>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <span class="badge {% if notif.notification_type == 'approval' %}bg-success{% elif notif.notification_type == 'grade' %}bg-primary{% else %}bg-info{% endif %}">
+                                    {{ 'موافقة' if notif.notification_type == 'approval' else 'درجة' if notif.notification_type == 'grade' else 'عام' }}
+                                </span>
+                                {% if notif.is_read %}
+                                    <span class="badge bg-secondary ms-2">مقروء</span>
+                                {% else %}
+                                    <span class="badge bg-warning ms-2">جديد</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-bell-slash fa-4x mb-3"></i>
+                        <h4>لا توجد إشعارات حالياً</h4>
+                        <p>سيتم عرض الإشعارات هنا عند إرسالها للطلاب</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Notification Modal -->
+    <div class="modal fade" id="sendNotificationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-paper-plane"></i> إرسال إشعار جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="notificationForm">
+                        <div class="mb-3">
+                            <label class="form-label">العنوان:</label>
+                            <input type="text" class="form-control" id="notifTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">الرسالة:</label>
+                            <textarea class="form-control" id="notifMessage" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">نوع الإشعار:</label>
+                            <select class="form-select" id="notifType">
+                                <option value="general">عام</option>
+                                <option value="announcement">إعلان</option>
+                                <option value="reminder">تذكير</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">المستلمين:</label>
+                            <select class="form-select" id="notifRecipients" onchange="toggleStudentId()">
+                                <option value="all">جميع الطلاب</option>
+                                <option value="specific">طالب محدد</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="studentIdField" style="display:none;">
+                            <label class="form-label">Telegram ID للطالب:</label>
+                            <input type="number" class="form-control" id="studentId" placeholder="مثال: 1993109100">
+                            <small class="text-muted">يمكن الحصول على الـ ID من قائمة المستخدمين</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-send-notification" onclick="sendNotification()">
+                        <i class="fas fa-paper-plane"></i> إرسال
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleStudentId() {
+            const recipients = document.getElementById('notifRecipients').value;
+            const studentIdField = document.getElementById('studentIdField');
+            
+            if (recipients === 'specific') {
+                studentIdField.style.display = 'block';
+            } else {
+                studentIdField.style.display = 'none';
+            }
+        }
+        
+        async function sendNotification() {
+            const title = document.getElementById('notifTitle').value;
+            const message = document.getElementById('notifMessage').value;
+            const type = document.getElementById('notifType').value;
+            const recipients = document.getElementById('notifRecipients').value;
+            const studentId = document.getElementById('studentId').value;
+
+            if (!title || !message) {
+                alert('❌ يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
+            
+            if (recipients === 'specific' && !studentId) {
+                alert('❌ يرجى إدخال Telegram ID للطالب');
+                return;
+            }
+
+            try {
+                const payload = {
+                    title: title,
+                    message: message,
+                    type: type,
+                    recipients: recipients
+                };
+                
+                if (recipients === 'specific') {
+                    payload.student_id = parseInt(studentId);
+                }
+                
+                const response = await fetch('/api/send-notification', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || 'حدث خطأ في إرسال الإشعار'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ حدث خطأ في الاتصال');
+            }
+        }
+    </script>
+</body>
+</html>

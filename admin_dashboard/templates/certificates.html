@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الشهادات - المنصة التعليمية</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .navbar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 15px 20px;
+        }
+        .certificate-card {
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+            transition: all 0.3s;
+        }
+        .certificate-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .certificate-preview {
+            width: 200px;
+            height: 140px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 50px;
+        }
+        .btn-generate {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-graduation-cap"></i> لوحة التحكم
+            </a>
+            <div class="d-flex gap-2">
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-home"></i> الرئيسية
+                </a>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateCertModal">
+                    <i class="fas fa-certificate"></i> إصدار شهادة
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-certificate"></i> الشهادات
+                    </h3>
+                    <span class="badge bg-light text-dark fs-5">
+                        إجمالي: {{ certificates|length }} شهادة
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if certificates %}
+                    {% for cert in certificates %}
+                    <div class="certificate-card">
+                        <div class="row align-items-center">
+                            <div class="col-md-2">
+                                <div class="certificate-preview">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <h5 class="mb-2">
+                                    <i class="fas fa-user text-primary"></i>
+                                    {{ cert.student_name }}
+                                </h5>
+                                <p class="mb-2">
+                                    <strong>الدورة:</strong> {{ cert.course_name }}<br>
+                                    <strong>تاريخ الإصدار:</strong> {{ cert.issued_at.strftime('%Y-%m-%d') }}
+                                </p>
+                                <small class="text-muted">
+                                    <i class="fas fa-hashtag"></i> {{ cert.certificate_id }}
+                                </small>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <button class="btn btn-sm btn-primary mb-2 w-100" onclick="viewCertificate('{{ cert.id }}')">
+                                    <i class="fas fa-eye"></i> عرض
+                                </button>
+                                <button class="btn btn-sm btn-success w-100" onclick="downloadCertificate('{{ cert.id }}')">
+                                    <i class="fas fa-download"></i> تحميل PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-certificate fa-4x mb-3 text-warning"></i>
+                        <h4>لا توجد شهادات حالياً</h4>
+                        <p>سيتم إصدار الشهادات للطلاب الذين أكملوا الدورات بنجاح</p>
+                        <div class="alert alert-info mt-4 text-start">
+                            <h6><i class="fas fa-info-circle"></i> متطلبات الحصول على الشهادة:</h6>
+                            <ul class="mb-0">
+                                <li>إكمال جميع الفيديوهات والمحاضرات</li>
+                                <li>تسليم جميع الواجبات المطلوبة</li>
+                                <li>الحصول على درجة النجاح في الاختبارات</li>
+                                <li>إكمال نسبة 80% أو أكثر من الدورة</li>
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Certificate Modal -->
+    <div class="modal fade" id="generateCertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-certificate"></i> إصدار شهادة جديدة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="certForm">
+                        <div class="mb-3">
+                            <label class="form-label">اسم الطالب:</label>
+                            <input type="text" class="form-control" id="studentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">الدورة:</label>
+                            <select class="form-select" id="courseId" required>
+                                <option value="">اختر الدورة...</option>
+                                <option value="web_dev">تطوير المواقع الشامل</option>
+                                <option value="mobile_dev">تطوير تطبيقات الموبايل</option>
+                                <option value="graphic_design">التصميم الجرافيكي</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">التقدير:</label>
+                            <select class="form-select" id="grade">
+                                <option value="excellent">ممتاز</option>
+                                <option value="very_good">جيد جداً</option>
+                                <option value="good">جيد</option>
+                                <option value="pass">مقبول</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-generate" onclick="generateCertificate()">
+                        <i class="fas fa-certificate"></i> إصدار الشهادة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewCertificate(certId) {
+            alert('سيتم عرض الشهادة #' + certId);
+        }
+
+        function downloadCertificate(certId) {
+            alert('سيتم تحميل الشهادة #' + certId + ' بصيغة PDF');
+        }
+
+        async function generateCertificate() {
+            const studentName = document.getElementById('studentName').value;
+            const courseId = document.getElementById('courseId').value;
+            const grade = document.getElementById('grade').value;
+
+            if (!studentName || !courseId) {
+                alert('❌ يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
+
+            alert('⚠️ نظام إصدار الشهادات قيد التطوير\n\nسيتم إضافة هذه الميزة قريباً');
+        }
+    </script>
+</body>
+</html>

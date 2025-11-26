@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسليمات الواجب - المنصة التعليمية</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .navbar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 15px 20px;
+        }
+        .submission-card {
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+            transition: all 0.3s;
+        }
+        .submission-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .submission-card.graded {
+            border-color: #28a745;
+        }
+        .submission-card.pending {
+            border-color: #ffc107;
+        }
+        .file-preview {
+            width: 100px;
+            height: 100px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #667eea;
+        }
+        .btn-grade {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+        }
+        .btn-grade:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-graduation-cap"></i> لوحة التحكم
+            </a>
+            <div class="d-flex gap-2">
+                <a href="/assignments" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-right"></i> العودة للواجبات
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <!-- Assignment Info -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-file-alt"></i> {{ assignment.title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>الوصف:</strong> {{ assignment.description }}</p>
+                        <p><strong>الدورة:</strong> {{ assignment.course_id }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>الدرجة الكاملة:</strong> {{ assignment.max_grade }}</p>
+                        <p><strong>درجة النجاح:</strong> {{ assignment.pass_grade }}</p>
+                        <p><strong>تاريخ الإنشاء:</strong> {{ assignment.created_at.strftime('%Y-%m-%d') if assignment.created_at else 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submissions List -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-paper-plane"></i> التسليمات
+                    </h3>
+                    <span class="badge bg-light text-dark fs-5">
+                        إجمالي: {{ submissions|length }} تسليم
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if submissions %}
+                    {% for sub_data in submissions %}
+                    {% set submission = sub_data.submission %}
+                    {% set user = sub_data.user %}
+                    <div class="submission-card {{ submission.status }}">
+                        <div class="row align-items-center">
+                            <div class="col-md-1">
+                                <div class="file-preview">
+                                    <i class="fas fa-file"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <h5 class="mb-2">
+                                    <i class="fas fa-user-circle text-primary"></i>
+                                    {{ user.full_name }}
+                                </h5>
+                                <p class="text-muted mb-1">{{ submission.submission_text[:100] if submission.submission_text else 'لا يوجد نص' }}...</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') if submission.submitted_at else 'N/A' }}
+                                </small>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                {% if submission.status == 'graded' %}
+                                    <div class="mb-2">
+                                        <h4 class="text-success mb-0">{{ submission.grade }}/{{ assignment.max_grade }}</h4>
+                                        <small class="text-muted">{{ ((submission.grade / assignment.max_grade) * 100)|round(1) }}%</small>
+                                    </div>
+                                    {% if submission.feedback %}
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-comment"></i> {{ submission.feedback[:50] }}...
+                                    </small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning fs-6">
+                                        <i class="fas fa-clock"></i> معلق
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 text-center">
+                                {% if submission.file_id %}
+                                <button class="btn btn-sm btn-info mb-2 w-100" onclick="viewFile('{{ bot_token }}', '{{ submission.file_id }}')">
+                                    <i class="fas fa-eye"></i> عرض الملف
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-grade w-100" onclick="gradeSubmission('{{ assignment.id }}', '{{ user.telegram_id }}', '{{ assignment.max_grade }}')">
+                                    <i class="fas fa-edit"></i> {% if submission.status == 'graded' %}تعديل الدرجة{% else %}تصحيح{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-inbox fa-4x mb-3"></i>
+                        <h4>لا توجد تسليمات لهذا الواجب</h4>
+                        <p>سيتم عرض تسليمات الطلاب هنا</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Modal -->
+    <div class="modal fade" id="gradeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> تصحيح الواجب</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="gradeForm">
+                        <input type="hidden" id="assignmentId">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label class="form-label">الدرجة:</label>
+                            <input type="number" class="form-control" id="gradeInput" min="0" required>
+                            <small class="text-muted">من <span id="maxGrade"></span></small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">الملاحظات:</label>
+                            <textarea class="form-control" id="feedbackInput" rows="4" placeholder="أضف ملاحظاتك هنا..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-grade" onclick="submitGrade()">
+                        <i class="fas fa-save"></i> حفظ الدرجة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File View Modal -->
+    <div class="modal fade" id="fileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file"></i> عرض الملف</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="fileImage" src="" class="img-fluid" alt="File" style="display:none;">
+                    <div id="fileInfo" style="display:none;">
+                        <i class="fas fa-file fa-4x mb-3"></i>
+                        <p>ملف غير مدعوم للعرض المباشر</p>
+                        <a id="downloadLink" href="" class="btn btn-primary" target="_blank">
+                            <i class="fas fa-download"></i> تحميل الملف
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function viewFile(botToken, fileId) {
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+                const data = await response.json();
+                
+                if (data.ok) {
+                    const fileUrl = `https://api.telegram.org/file/bot${botToken}/${data.result.file_path}`;
+                    const filePath = data.result.file_path.toLowerCase();
+                    
+                    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.png')) {
+                        document.getElementById('fileImage').src = fileUrl;
+                        document.getElementById('fileImage').style.display = 'block';
+                        document.getElementById('fileInfo').style.display = 'none';
+                    } else {
+                        document.getElementById('fileImage').style.display = 'none';
+                        document.getElementById('fileInfo').style.display = 'block';
+                        document.getElementById('downloadLink').href = fileUrl;
+                    }
+                    
+                    new bootstrap.Modal(document.getElementById('fileModal')).show();
+                } else {
+                    alert('❌ فشل تحميل الملف');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ حدث خطأ أثناء تحميل الملف');
+            }
+        }
+
+        function gradeSubmission(assignmentId, userId, maxGrade) {
+            document.getElementById('assignmentId').value = assignmentId;
+            document.getElementById('userId').value = userId;
+            document.getElementById('maxGrade').textContent = maxGrade;
+            document.getElementById('gradeInput').max = maxGrade;
+            
+            new bootstrap.Modal(document.getElementById('gradeModal')).show();
+        }
+
+        async function submitGrade() {
+            const assignmentId = document.getElementById('assignmentId').value;
+            const userId = document.getElementById('userId').value;
+            const grade = document.getElementById('gradeInput').value;
+            const feedback = document.getElementById('feedbackInput').value;
+
+            if (!grade) {
+                alert('❌ يرجى إدخال الدرجة');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/grade-submission', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        assignment_id: assignmentId,
+                        user_id: userId,
+                        grade: grade,
+                        feedback: feedback
+                    })
+                });
+
+                if (response.ok) {
+                    alert('✅ تم حفظ الدرجة بنجاح!');
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('❌ فشل حفظ الدرجة: ' + (error.detail || 'خطأ غير معروف'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ حدث خطأ: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
