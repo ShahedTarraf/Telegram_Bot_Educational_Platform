@@ -1,0 +1,15 @@
+python-telegram-bot
+fastapi
+uvicorn
+aiofiles
+jinja2
+motor
+beanie
+pydantic
+pydantic-settings
+python-dotenv
+loguru
+httpx
+openpyxl
+reportlab
+email-validator
