@@ -50,43 +50,18 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # New user
     if is_admin:
-        # Auto-register admin with default info
+        # Admin: لا نعتمد على حفظه في قاعدة البيانات لعرض لوحة الأدمن
         first_name = update.effective_user.first_name or "Admin"
-        
-        try:
-            user = User(
-                telegram_id=telegram_id,
-                full_name=first_name,
-                phone="+963000000000",
-                email=settings.ADMIN_EMAIL
-            )
-            await user.insert()
-        except ValidationError as e:
-            logger.error(f"Admin registration validation error for {telegram_id}: {e}")
-            await update.message.reply_text(
-                "❌ حدث خطأ أثناء تسجيل حساب الأدمن في قاعدة البيانات.\n"
-                "يرجى التأكد من صحة البريد ADMIN_EMAIL في ملف الإعدادات ثم المحاولة مجدداً."
-            )
-            return ConversationHandler.END
-        except Exception as e:
-            logger.error(f"Unexpected error during admin registration for {telegram_id}: {e}")
-            await update.message.reply_text(
-                "❌ حدث خطأ غير متوقع أثناء تسجيل حساب الأدمن.\n"
-                "يرجى المحاولة لاحقاً أو التواصل مع المطور."
-            )
-            return ConversationHandler.END
-        
         keyboard = get_admin_menu_keyboard()
         text = f"""
 🔑 **مرحباً Admin!**
 
-تم تسجيلك تلقائياً كمدير للمنصة! 🎉
+تم التعرف عليك كمدير للمنصة! 🎉
 
 استخدم القائمة بالأسفل لإدارة المنصة:
         """
-        
         await update.message.reply_text(text, reply_markup=keyboard)
-        logger.info(f"Admin auto-registered: {telegram_id} - {first_name}")
+        logger.info(f"Admin logged in (without DB record): {telegram_id} - {first_name}")
         return ConversationHandler.END
     
     # Regular user - start registration
@@ -179,7 +154,14 @@ async def asking_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         existing_user = await User.find_one(User.email == email)
     except ValidationError as e:
-        logger.error(f"Validation error while checking email {email}: {e}")
+        # قد تشير إلى سجلات تالفة قديمة بنفس البريد - نحاول تنظيفها ثم نكمل
+        logger.error(f"Validation error while checking email {email}: {e}. Attempting cleanup.")
+        try:
+            collection = User.get_motor_collection()
+            result = await collection.delete_many({"email": email})
+            logger.info(f"Deleted {result.deleted_count} corrupted user documents with email {email}")
+        except Exception as cleanup_error:
+            logger.error(f"Failed to cleanup corrupted user docs with email {email}: {cleanup_error}")
         existing_user = None
     except Exception as e:
         logger.error(f"Unexpected DB error while checking email {email}: {e}")
@@ -224,15 +206,18 @@ async def asking_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
         
     except Exception as e:
-        logger.error(f"Registration error: {e}")
-        error_msg = f"""
-❌ **حدث خطأ أثناء التسجيل!**
-
-**الخطأ:** {str(e)}
-
-يرجى المحاولة مرة أخرى أو التواصل مع الإدارة.
-        """
-        await update.message.reply_text(error_msg)
+        # نسجل تفاصيل الخطأ في الـ logs فقط، ونعرض رسالة ودية للمستخدم
+        logger.error(f"Registration error for telegram_id={update.effective_user.id}, email={email}: {repr(e)}")
+        msg = "❌ **حدث خطأ أثناء التسجيل!**\n\n"
+        error_text = str(e).lower()
+        if "duplicate key" in error_text or "e11000" in error_text:
+            msg += (
+                "يبدو أن هذا البريد الإلكتروني أو حساب التلغرام مسجّل مسبقاً في النظام.\n"
+                "جرّب بريدًا إلكترونيًا آخر أو تواصل مع الإدارة إذا كنت متأكداً أن هذا خطأ."
+            )
+        else:
+            msg += "يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع الإدارة."
+        await update.message.reply_text(msg)
         context.user_data.clear()
         return ConversationHandler.END
 
