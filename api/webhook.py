@@ -36,6 +36,12 @@ async def on_shutdown() -> None:
 async def telegram_webhook(request: Request) -> Dict[str, Any]:
     """Telegram webhook endpoint (POST-only)."""
     data = await request.json()
+    logger.debug(f"Webhook received raw JSON: {data}")
     update = Update.de_json(data, telegram_app.bot)
+    try:
+        logger.debug(f"Webhook Update.to_dict: {update.to_dict() if isinstance(update, Update) else update}")
+    except Exception as e:
+        logger.error(f"Failed to serialize Update in webhook debug logging: {e}")
     await telegram_app.process_update(update)
+    logger.debug("Webhook update processed successfully")
     return {"ok": True}

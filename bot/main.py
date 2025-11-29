@@ -1,7 +1,6 @@
-"""
-Telegram Bot Main Entry Point
-"""
+"""Telegram Bot Main Entry Point"""
 import asyncio
+import traceback
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -10,7 +9,8 @@ from telegram.ext import (
     CallbackQueryHandler,
     ConversationHandler,
     ContextTypes,
-    filters
+    TypeHandler,
+    filters,
 )
 from loguru import logger
 
@@ -226,6 +226,25 @@ async def main_menu_handler(update: Update, context):
 async def error_handler(update: Update, context):
     """Handle errors"""
     logger.error(f"Update {update} caused error: {context.error}")
+    # Debug: log full update dict and traceback for easier debugging
+    try:
+        if isinstance(update, Update):
+            logger.debug(f"error_handler update dict: {update.to_dict()}")
+        else:
+            logger.debug(f"error_handler received non-Update object: {update}")
+    except Exception as serialize_error:
+        logger.error(f"Failed to serialize update in error_handler: {serialize_error}")
+
+    try:
+        if context and context.error:
+            tb = "".join(
+                traceback.format_exception(
+                    type(context.error), context.error, context.error.__traceback__
+                )
+            )
+            logger.error(f"error_handler traceback for context.error:\n{tb}")
+    except Exception as tb_error:
+        logger.error(f"Failed to format traceback in error_handler: {tb_error}")
     
     if update and update.effective_message:
         await update.effective_message.reply_text(
@@ -268,6 +287,18 @@ def create_application() -> Application:
         .post_shutdown(_post_shutdown)
         .build()
     )
+
+    # Global debug handler to log every incoming Update without changing behavior
+    async def debug_log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        try:
+            if isinstance(update, Update):
+                logger.debug(f"Incoming update: {update.to_dict()}")
+            else:
+                logger.debug(f"Incoming non-Update object in debug_log_update: {update}")
+        except Exception as e:
+            logger.error(f"Failed to serialize update in debug_log_update: {e}")
+
+    application.add_handler(TypeHandler(Update, debug_log_update), group=-1)
     
     # Registration conversation handler
     registration_handler = ConversationHandler(

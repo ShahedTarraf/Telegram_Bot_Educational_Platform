@@ -18,16 +18,22 @@ class StatisticsManager:
         """Get comprehensive dashboard statistics"""
         try:
             # User statistics
+            logger.debug("get_dashboard_stats: counting total users")
             total_users = await User.find().count()
+            logger.debug(f"get_dashboard_stats: total_users={total_users}")
             active_users = await User.find(
                 User.last_active > datetime.utcnow() - timedelta(days=7)
             ).count()
+            logger.debug(f"get_dashboard_stats: active_users_last_7_days={active_users}")
             new_users_this_week = await User.find(
                 User.registered_at > datetime.utcnow() - timedelta(days=7)
             ).count()
+            logger.debug(f"get_dashboard_stats: new_users_this_week={new_users_this_week}")
             
             # Course enrollment stats
+            logger.debug("get_dashboard_stats: loading all users for enrollment stats")
             users = await User.find().to_list()
+            logger.debug(f"get_dashboard_stats: loaded {len(users)} users for enrollment stats")
             total_enrollments = sum(len(user.courses) for user in users)
             approved_enrollments = sum(
                 len([c for c in user.courses if c.approval_status == "approved"])
@@ -39,7 +45,9 @@ class StatisticsManager:
             )
             
             # Assignment stats
+            logger.debug("get_dashboard_stats: loading all assignments")
             all_assignments = await Assignment.find().to_list()
+            logger.debug(f"get_dashboard_stats: loaded {len(all_assignments)} assignments")
             total_assignments = len(all_assignments)
             total_submissions = sum(len(a.submissions) for a in all_assignments)
             graded_submissions = sum(
@@ -87,12 +95,15 @@ class StatisticsManager:
     async def get_student_stats(telegram_id: int) -> Dict:
         """Get individual student statistics"""
         try:
+            logger.debug(f"get_student_stats: loading user by telegram_id={telegram_id}")
             user = await User.find_one(User.telegram_id == telegram_id)
             if not user:
                 return {}
             
             # Get all assignments with this student's submissions
+            logger.debug("get_student_stats: loading all assignments")
             all_assignments = await Assignment.find().to_list()
+            logger.debug(f"get_student_stats: loaded {len(all_assignments)} assignments")
             student_assignments = []
             
             for assignment in all_assignments:
@@ -154,6 +165,7 @@ class StatisticsManager:
     async def get_assignment_stats(assignment_id: str) -> Dict:
         """Get assignment-specific statistics"""
         try:
+            logger.debug(f"get_assignment_stats: loading assignment by id={assignment_id}")
             assignment = await Assignment.find_one(Assignment.id == assignment_id)
             if not assignment:
                 return {}
@@ -210,8 +222,12 @@ class StatisticsManager:
     async def get_top_students(limit: int = 10) -> List[Dict]:
         """Get top performing students"""
         try:
+            logger.debug("get_top_students: loading all users")
             users = await User.find().to_list()
+            logger.debug(f"get_top_students: loaded {len(users)} users")
+            logger.debug("get_top_students: loading all assignments")
             all_assignments = await Assignment.find().to_list()
+            logger.debug(f"get_top_students: loaded {len(all_assignments)} assignments")
             
             student_performances = []
             
@@ -247,7 +263,9 @@ class StatisticsManager:
             start_date = datetime.utcnow() - timedelta(days=days)
             
             # Get daily registrations
+            logger.debug(f"get_activity_chart_data: loading users registered after {start_date}")
             users = await User.find(User.registered_at > start_date).to_list()
+            logger.debug(f"get_activity_chart_data: loaded {len(users)} users for registrations chart")
             
             daily_registrations = {}
             for i in range(days):
@@ -261,7 +279,9 @@ class StatisticsManager:
                     daily_registrations[date_key] += 1
             
             # Get daily submissions
+            logger.debug("get_activity_chart_data: loading all assignments for submissions chart")
             all_assignments = await Assignment.find().to_list()
+            logger.debug(f"get_activity_chart_data: loaded {len(all_assignments)} assignments for submissions chart")
             daily_submissions = {}
             
             for i in range(days):

@@ -24,14 +24,15 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Check if user already registered
     try:
+        logger.debug(f"start_command: checking existing user by telegram_id={telegram_id}")
         user = await User.find_one(User.telegram_id == telegram_id)
     except ValidationError as e:
         # مشكلة في تحميل مستند مستخدم من قاعدة البيانات (سكيما قديمة أو بيانات تالفة)
-        logger.error(f"Validation error while loading user {telegram_id}: {e}")
+        logger.error(f"Validation error while loading user {telegram_id}: {repr(e)}")
         user = None
     except Exception as e:
         # أي خطأ آخر في قاعدة البيانات لا يجب أن يسقط البوت بالكامل
-        logger.error(f"Unexpected DB error while fetching user {telegram_id}: {e}")
+        logger.error(f"Unexpected DB error while fetching user {telegram_id}: {repr(e)}")
         user = None
     
     if user:
@@ -152,19 +153,20 @@ async def asking_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Check if email already exists
     try:
+        logger.debug(f"asking_email: checking existing user by email={email}")
         existing_user = await User.find_one(User.email == email)
     except ValidationError as e:
         # قد تشير إلى سجلات تالفة قديمة بنفس البريد - نحاول تنظيفها ثم نكمل
-        logger.error(f"Validation error while checking email {email}: {e}. Attempting cleanup.")
+        logger.error(f"Validation error while checking email {email}: {repr(e)}. Attempting cleanup.")
         try:
             collection = User.get_motor_collection()
             result = await collection.delete_many({"email": email})
             logger.info(f"Deleted {result.deleted_count} corrupted user documents with email {email}")
         except Exception as cleanup_error:
-            logger.error(f"Failed to cleanup corrupted user docs with email {email}: {cleanup_error}")
+            logger.error(f"Failed to cleanup corrupted user docs with email {email}: {repr(cleanup_error)}")
         existing_user = None
     except Exception as e:
-        logger.error(f"Unexpected DB error while checking email {email}: {e}")
+        logger.error(f"Unexpected DB error while checking email {email}: {repr(e)}")
         existing_user = None
     if existing_user:
         await update.message.reply_text(
@@ -175,12 +177,20 @@ async def asking_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Create new user
     try:
+        logger.debug(
+            "asking_email: creating new user with "
+            f"telegram_id={update.effective_user.id}, "
+            f"full_name={context.user_data.get('full_name')}, "
+            f"phone={context.user_data.get('phone')}, "
+            f"email={email}"
+        )
         user = User(
             telegram_id=update.effective_user.id,
             full_name=context.user_data['full_name'],
             phone=context.user_data['phone'],
             email=email
         )
+        logger.debug("asking_email: inserting new user into MongoDB")
         await user.insert()
         
         logger.info(f"New user registered: {user.full_name} ({user.telegram_id})")
