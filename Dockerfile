@@ -25,16 +25,12 @@ RUN pip install --upgrade pip && \
 # Copy the entire application
 COPY . .
 
-# Copy entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
-# Expose port (Railway will override this with $PORT)
+# Expose port
 EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health/db', timeout=5)"
+    CMD python -c "import requests; requests.get('http://localhost:8000/', timeout=5)" || exit 1
 
-# Run the application
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Run the application - use port 8000 directly (Railway handles port mapping)
+CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
