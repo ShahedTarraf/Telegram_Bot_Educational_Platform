@@ -33,4 +33,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/', timeout=5)" || exit 1
 
 # Run the application - properly expand PORT environment variable
-CMD sh -c "python -m uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"
+CMD uvicorn server:app --host 0.0.0.0 --port $PORT
