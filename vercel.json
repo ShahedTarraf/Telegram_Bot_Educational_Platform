@@ -1,35 +1,31 @@
 {
   "version": 2,
   "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": ".",
   "builds": [
-    { "src": "server.py", "use": "@vercel/python" },
-    { "src": "api/*.py", "use": "@vercel/python" }
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "runtime": "python3.11"
+      }
+    }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/server.py"
+      "dest": "/api/index.py"
     }
   ],
   "env": {
-    "MONGODB_URL": "@mongodb_url",
-    "MONGODB_DB_NAME": "@mongodb_db_name",
-    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token",
-    "TELEGRAM_ADMIN_ID": "@telegram_admin_id",
-    "BOT_WEBHOOK_URL": "@bot_webhook_url"
+    "PYTHONUNBUFFERED": "1"
   },
   "functions": {
-    "server.py": {
+    "api/index.py": {
       "memory": 3008,
-      "maxDuration": 60
-    },
-    "api/webhook.py": {
-      "memory": 3008,
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "**"
     }
   }
 }
