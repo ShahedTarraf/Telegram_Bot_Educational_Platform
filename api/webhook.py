@@ -35,6 +35,20 @@ async def on_shutdown() -> None:
 @app.post("/api/webhook")
 async def telegram_webhook(request: Request) -> Dict[str, Any]:
     """Telegram webhook endpoint (POST-only)."""
+    # Ensure database is initialized (critical for Vercel cold starts)
+    try:
+        from database.connection import Database
+        if not Database.beanie_initialized:
+            logger.debug("[WEBHOOK] Database not initialized, initializing now...")
+            print("[WEBHOOK] Database not initialized, initializing now...", flush=True)
+            await Database.connect()
+            logger.debug("[WEBHOOK] Database initialized successfully")
+            print("[WEBHOOK] Database initialized successfully", flush=True)
+    except Exception as db_error:
+        logger.error(f"[WEBHOOK] Failed to initialize database: {repr(db_error)}", exc_info=True)
+        print(f"[WEBHOOK] ERROR: Failed to initialize database: {repr(db_error)}", flush=True)
+        # Continue anyway - handlers will catch the error
+    
     data = await request.json()
     logger.debug(f"Webhook received raw JSON: {data}")
     update = Update.de_json(data, telegram_app.bot)
