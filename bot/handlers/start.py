@@ -23,16 +23,65 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_admin = telegram_id == settings.TELEGRAM_ADMIN_ID
     
     # Check if user already registered
+    user = None
     try:
-        logger.debug(f"start_command: checking existing user by telegram_id={telegram_id}")
-        user = await User.find_one(User.telegram_id == telegram_id)
+        logger.debug(f"[START] Checking existing user by telegram_id={telegram_id}")
+        print(f"[START] Attempting to find user with telegram_id={telegram_id}", flush=True)
+        
+        # Verify database connection first
+        from database.connection import Database
+        is_connected = await Database.is_connected()
+        if not is_connected:
+            logger.error(f"[START] Database not connected when checking user {telegram_id}")
+            print(f"[START] ERROR: Database not connected", flush=True)
+            user = None
+        else:
+            logger.debug(f"[START] Database is connected, proceeding with query")
+            user = await User.find_one(User.telegram_id == telegram_id)
+            logger.debug(f"[START] Query result: user={'Found' if user else 'Not found'}")
+            print(f"[START] Query result: user={'Found' if user else 'Not found'}", flush=True)
+            
     except ValidationError as e:
         # مشكلة في تحميل مستند مستخدم من قاعدة البيانات (سكيما قديمة أو بيانات تالفة)
-        logger.error(f"Validation error while loading user {telegram_id}: {repr(e)}")
+        error_type = type(e).__name__
+        error_msg = f"[START] Validation error while loading user {telegram_id}: {error_type}: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        print(f"ERROR: {error_msg}", flush=True)
+        
+        # Send admin notification
+        try:
+            from utils.admin_notifications import send_admin_error
+            await send_admin_error(
+                context.bot,
+                f"Validation error while loading user data:\n\n`{str(e)}`",
+                error_type="WARNING",
+                user_id=telegram_id
+            )
+        except Exception as notify_error:
+            logger.error(f"Failed to notify admin: {repr(notify_error)}")
+        
         user = None
     except Exception as e:
         # أي خطأ آخر في قاعدة البيانات لا يجب أن يسقط البوت بالكامل
-        logger.error(f"Unexpected DB error while fetching user {telegram_id}: {repr(e)}")
+        error_type = type(e).__name__
+        error_msg = f"[START] Unexpected DB error while fetching user {telegram_id}: {error_type}: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        print(f"ERROR: {error_msg}", flush=True)
+        import traceback
+        traceback.print_exc()
+        
+        # Send admin notification
+        try:
+            from utils.admin_notifications import send_admin_error
+            await send_admin_error(
+                context.bot,
+                f"Database error while fetching user:\n\n`{error_type}: {str(e)}`",
+                error_type="ERROR",
+                user_id=telegram_id
+            )
+        except Exception as notify_error:
+            logger.error(f"Failed to notify admin: {repr(notify_error)}")
+        
         user = None
     
     if user:
