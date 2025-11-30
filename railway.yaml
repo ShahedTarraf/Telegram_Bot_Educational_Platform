@@ -1,0 +1,33 @@
+# Railway configuration file
+# Documentation: https://docs.railway.app/
+
+services:
+  app:
+    build:
+      dockerfile: Dockerfile
+    start: python -m uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthchecks:
+      - path: /health/db
+        interval: 30
+        timeout: 10
+        start_period: 40
+        retries: 3
+
+variables:
+  PORT: 8000
+  PYTHONUNBUFFERED: "1"
+  DEBUG: "False"
+
+# Environment variables that need to be set in Railway dashboard:
+# - TELEGRAM_BOT_TOKEN
+# - TELEGRAM_ADMIN_ID
+# - MONGODB_URL
+# - MONGODB_DB_NAME
+# - SECRET_KEY
+# - ADMIN_USERNAME
+# - ADMIN_PASSWORD
+# - ADMIN_EMAIL
+# - SHAP_CASH_NUMBER
+# - HARAM_NUMBER
+# - BOT_WEBHOOK_URL (should be: https://your-railway-domain.up.railway.app/webhook)
+# - DASHBOARD_URL (should be: https://your-railway-domain.up.railway.app)
