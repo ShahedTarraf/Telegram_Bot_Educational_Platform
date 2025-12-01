@@ -117,7 +117,7 @@ async def health_check() -> dict:
     from database.connection import Database
     db_connected = await Database.is_connected()
     return {
-        "status": "ok",
+        "status": "healthy",
         "service": "Educational Platform",
         "bot_webhook": True,
         "admin_dashboard": True,
