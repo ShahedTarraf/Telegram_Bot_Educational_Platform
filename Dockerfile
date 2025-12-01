@@ -25,12 +25,12 @@ RUN pip install --upgrade pip && \
 # Copy the entire application
 COPY . .
 
-# Expose port (Railway will override this with $PORT)
-EXPOSE 8000
+# Expose port (default; platforms may override with $PORT)
+EXPOSE 8080
 
-# Health check
+# Health check (uses stdlib urllib, no extra deps). Checks /health/db on configured port.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health/db', timeout=5)"
+    CMD python -c "import os,urllib.request,sys; port=os.getenv('PORT','8080'); url=f'http://localhost:{port}/health/db'; urllib.request.urlopen(url, timeout=5)" || exit 1
 
-# Run the application
-CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application (respect $PORT with fallback to 8080)
+CMD ["sh", "-c", "python -m uvicorn server:app --host 0.0.0.0 --port ${PORT:-8080}"]

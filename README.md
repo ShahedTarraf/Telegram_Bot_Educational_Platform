@@ -5,10 +5,10 @@
 ## المتطلبات
 
 - Python 3.10+
-- MongoDB يعمل محلياً على `mongodb://localhost:27017`
+- MongoDB (محلي أو MongoDB Atlas)
 - حساب Telegram Bot Token
 
-## التثبيت
+## التثبيت المحلي
 
 ```bash
 python -m venv venv
@@ -16,28 +16,17 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## تشغيل البوت
+## تشغيل البوت محلياً
 
 ```bash
 venv\Scripts\activate
-python run_bot.py
+python -m uvicorn server:app --host 0.0.0.0 --port 8000
 ```
 
-## تشغيل لوحة التحكم (Dashboard)
-
-```bash
-venv\Scripts\activate
-python run_dashboard.py
-```
-
-- لوحة التحكم تعمل عادة على: `http://localhost:8000`
+- التطبيق يعمل على: `http://localhost:8000`
 - صفحة التوثيق (Swagger): `http://localhost:8000/docs`
+- لوحة التحكم: `http://localhost:8000/admin`
 
-## المتغيرات الحساسة
+## النشر على Railway
 
-- ملف `.env` يحتوي على:
-  - `TELEGRAM_BOT_TOKEN`
-  - `MONGODB_URL`
-  - إعدادات أخرى حساسة
-
-> **مهم:** ملف `.env` مُستثنى في `.gitignore` ولن يتم رفعه إلى GitHub.
+#)

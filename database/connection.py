@@ -3,6 +3,7 @@ MongoDB Connection - Optimized for Vercel Serverless
 """
 import asyncio
 import os
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from loguru import logger
@@ -66,6 +67,7 @@ class Database:
                         maxPoolSize=10,                  # Connection pooling
                         minPoolSize=1,                   # Minimum connections
                         maxIdleTimeMS=45000,             # Close idle connections after 45s
+                        tlsCAFile=certifi.where(),       # Use certifi CA bundle for reliable TLS
                     )
                     
                     # Test the connection with ping
